@@ -84,6 +84,11 @@ def test_count_tokens_sql_limits_the_inner_query() -> None:
     assert custom == "select 1 as token_count"
     with pytest.raises(ValueError, match="prompt and source"):
         build_count_tokens_sql(LiveSample(), 20)
+    with pytest.raises(ValueError, match="sample_rows"):
+        build_count_tokens_sql(sample, 0)
+    plain = build_count_tokens_sql(LiveSample(prompt="body", source="tickets"), 5)
+    assert " where " not in plain
+    assert plain.endswith("limit 5)")
 
 
 def test_offline_estimate_never_connects(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -134,6 +139,15 @@ def test_live_without_a_probe_uses_connect(monkeypatch: pytest.MonkeyPatch) -> N
     assert probe.samples == ["select 3 as token_count"]
     assert result.calls[0].input_tokens == 251
     assert any("configured AI.COUNT_TOKENS" in note for note in result.calls[0].notes)
+
+
+def test_two_calls_in_one_model_share_a_sample() -> None:
+    probe = FakeProbe()
+    second = _call()
+    result = estimate_calls([_call(), second], _config(), live=True, probe=probe)
+    assert len(probe.samples) == 1
+    assert len(probe.dry) == 1
+    assert result.calls[0].input_tokens == result.calls[1].input_tokens == 251
 
 
 def test_live_without_sample_sql_keeps_the_assumption() -> None:

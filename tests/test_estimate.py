@@ -171,3 +171,6 @@ def test_example_project_blocks_the_risky_summary() -> None:
     assert result.total_usd is not None
     assert result.total_usd > Decimal("50")
     assert result.calls[0].to_dict()["priced"] is True
+    payload = result.to_dict()
+    assert payload["blocked"] is True
+    assert payload["models"]

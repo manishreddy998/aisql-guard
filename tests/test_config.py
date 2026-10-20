@@ -145,3 +145,21 @@ def test_bad_values_are_config_errors(tmp_path: Path) -> None:
     bad.write_text("[budgets]\ntotal_usd = true\n", encoding="utf-8")
     with pytest.raises(ConfigError, match="decimal"):
         load_config(tmp_path)
+
+    bad.write_text("[rules]\ndisable = [1]\n", encoding="utf-8")
+    with pytest.raises(ConfigError, match="disable"):
+        load_config(tmp_path)
+
+    bad.write_text("[estimate]\ndefault_rows = \"10\"\n", encoding="utf-8")
+    with pytest.raises(ConfigError, match="whole number"):
+        load_config(tmp_path)
+
+    bad.write_text("[budgets]\ntotal_usd = -1\n", encoding="utf-8")
+    with pytest.raises(ConfigError, match="negative"):
+        load_config(tmp_path)
+
+    pyproject = tmp_path / "pyproject.toml"
+    bad.unlink()
+    pyproject.write_text("[tool]\naisql-guard = 'nope'\n", encoding="utf-8")
+    with pytest.raises(ConfigError, match="must be a table"):
+        load_config(tmp_path)

@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from decimal import Decimal
 
+import pytest
+
 from aisql_guard.pricing import load_pricing
 
 
@@ -81,6 +83,60 @@ def test_snowflake_and_databricks_stay_in_vendor_units() -> None:
     )
     assert input_dbu == Decimal("0.50001")
     assert output_dbu == Decimal("1.50003")
+
+
+def test_unknown_and_ambiguous_labels_do_not_guess() -> None:
+    catalog = load_pricing()
+    assert catalog.get("missing") is None
+    assert catalog.get("3.5-flash-lite") is catalog.get("google-3.5-flash-lite")
+    assert catalog.resolve("llama-3.3-70b") is None
+    assert catalog.resolve("llama-3.3-70b", provider="bigquery") is None
+    assert catalog.source("missing") is None
+
+
+def test_bad_price_table_is_rejected() -> None:
+    from aisql_guard.pricing import catalog_from_json
+
+    with pytest.raises(ValueError, match="unknown source"):
+        catalog_from_json(
+            """
+            {
+              "version": 1,
+              "retrieved": "2026-10-20",
+              "multipliers": {
+                "snowflake_ai_credit_usd": "2.00",
+                "snowflake_ai_credit_usd_regional": "2.20",
+                "databricks_usd_per_dbu": "0.07"
+              },
+              "sources": [],
+              "models": [{
+                "id": "custom",
+                "provider": "bigquery",
+                "unit": "usd",
+                "input_per_million": "1",
+                "output_per_million": "1",
+                "page_row": "custom",
+                "source": "missing"
+              }]
+            }
+            """
+        )
+    with pytest.raises(ValueError, match="decimal string"):
+        catalog_from_json(
+            """
+            {
+              "version": 1,
+              "retrieved": "2026-10-20",
+              "multipliers": {
+                "snowflake_ai_credit_usd": 2,
+                "snowflake_ai_credit_usd_regional": "2.20",
+                "databricks_usd_per_dbu": "0.07"
+              },
+              "sources": [],
+              "models": []
+            }
+            """
+        )
 
 
 def test_same_label_can_differ_by_provider() -> None:
