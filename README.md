@@ -190,9 +190,22 @@ This repo's own CI lints, type checks, and tests on Python 3.10, 3.11, 3.12, and
 
 The same check also writes SARIF for code scanning.
 
-![SARIF annotations for a missing output cap and a budget](docs/sarif-annotation.png)
+![ASG001 on a pull request](docs/screenshots/scan-asg001.png)
 
-The SARIF document is [`docs/support-tickets.sarif`](docs/support-tickets.sarif). An SVG copy of the annotation is [`docs/sarif-annotation.svg`](docs/sarif-annotation.svg).
+GitHub code scanning annotations on [pull request 10](https://github.com/manishreddy998/aisql-guard/pull/10).
+
+<details>
+<summary>ASG002, ASG006, and ASG007</summary>
+
+![ASG002, no thinking budget](docs/screenshots/scan-asg002.png)
+
+![ASG006, unfiltered read](docs/screenshots/scan-asg006.png)
+
+![ASG007, SELECT * in the prompt](docs/screenshots/scan-asg007.png)
+
+</details>
+
+The SARIF document is [`docs/support-tickets.sarif`](docs/support-tickets.sarif).
 
 ## Live mode
 
