@@ -40,3 +40,17 @@ def test_ci_runs_lint_types_and_tests_on_supported_pythons() -> None:
     assert "pytest" in joined
     assert "twine" not in joined
     assert "pypi" not in joined.lower()
+
+
+def test_clean_install_job_uses_a_fresh_pip_install() -> None:
+    workflow = yaml.safe_load((ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8"))
+    job = workflow["jobs"]["install"]
+    assert job["strategy"]["matrix"]["pip"] == ["latest", "24.0"]
+    steps = "\n".join(step.get("run", "") for step in job["steps"])
+    assert "python -m pip install ." in steps
+    assert "aisql-guard check examples/support_tickets" in steps
+    assert "pytest" in steps
+    project = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
+    assert 'license = "MIT"' in project
+    assert "License :: OSI Approved :: MIT License" not in project
+    assert "setuptools>=77" in project
