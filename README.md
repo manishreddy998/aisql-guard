@@ -30,6 +30,10 @@ aisql-guard check examples/support_tickets
 
 `check` lints every model and estimates the cost. The sample project is supposed to fail. `ticket_summaries_risky` is over its model budget, and the project is over the total budget, so the status is 1.
 
+![Findings from a check of the sample project](docs/screenshots/check-findings.png)
+
+The first screen of that check.
+
 `scan` only lints. `estimate` only prices. Add a format when you want a file:
 
 ```bash
@@ -124,6 +128,10 @@ A numeric `max_output_tokens` or `thinking_budget` in the SQL replaces the match
 
 If the SQL names a priced model, that price is used. A remote model path that is not in the table falls through to the model id in config, then to `default_model`. A call that still has no price is left unpriced. It is not treated as zero. A budget blocks only when the known dollars are over the configured amount.
 
+![Estimate table with the run blocked](docs/screenshots/check-estimate.png)
+
+The end of the same check. The risky model and the project total are over budget, so the result is blocked.
+
 The price table is [`src/aisql_guard/data/pricing.json`](src/aisql_guard/data/pricing.json). Rates were copied on 20 October 2026:
 
 - [Google Cloud generative AI pricing](https://cloud.google.com/vertex-ai/generative-ai/pricing). Global standard rates, context at or under 200K tokens. The output row is text output, response and reasoning, so thinking uses the output rate. The 3.8 Flash row is the introductory rate through 31 December 2026. From 1 January 2027 the page lists a higher rate. This file does not switch on its own.
@@ -180,13 +188,11 @@ This repo's own CI lints, type checks, and tests on Python 3.10, 3.11, 3.12, and
 
 ## What a blocked run looks like
 
-These pictures are a real `check` of `examples/support_tickets`.
-
-![Terminal report for the sample project, ending in result blocked](docs/check-terminal.png)
+The same check also writes SARIF for code scanning.
 
 ![SARIF annotations for a missing output cap and a budget](docs/sarif-annotation.png)
 
-The same SARIF document is [`docs/support-tickets.sarif`](docs/support-tickets.sarif). SVG copies of the pictures are [`docs/check-terminal.svg`](docs/check-terminal.svg) and [`docs/sarif-annotation.svg`](docs/sarif-annotation.svg).
+The SARIF document is [`docs/support-tickets.sarif`](docs/support-tickets.sarif). An SVG copy of the annotation is [`docs/sarif-annotation.svg`](docs/sarif-annotation.svg).
 
 ## Live mode
 
@@ -224,6 +230,19 @@ You can set `count_tokens_sql` instead of `prompt` and `source` when the sample 
 - Jinja other than `ref`, `source`, `this`, `config`, and `is_incremental` is removed before parsing. A file that still cannot be parsed produces ASG000 and skips the structural checks.
 - A dbt model with no materialization is treated as a view, which is the dbt default. An AI call in that model is ASG005.
 - The estimate is a planning figure. It is not an invoice.
+
+## Development
+
+From a checkout:
+
+```bash
+python -m pip install -e '.[dev]'
+python -m pytest
+```
+
+![pytest output with 94 passed](docs/screenshots/tests-passing.png)
+
+`python -m pytest` on this repo. 94 passed.
 
 ## License
 
