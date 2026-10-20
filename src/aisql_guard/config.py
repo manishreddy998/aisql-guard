@@ -32,6 +32,17 @@ class ModelAssumption:
 
 
 @dataclass(frozen=True)
+class ResolvedAssumption:
+    """A model assumption with every count filled in."""
+
+    rows: int
+    input_tokens: int
+    output_tokens: int
+    thinking_tokens: int
+    model: str | None = None
+
+
+@dataclass(frozen=True)
 class LiveSample:
     """SQL used only when live mode is turned on for a run."""
 
@@ -65,11 +76,11 @@ class GuardConfig:
     live_models: dict[str, LiveSample] = field(default_factory=dict)
     path: Path | None = None
 
-    def assumption_for(self, model_name: str | None) -> ModelAssumption:
+    def assumption_for(self, model_name: str | None) -> ResolvedAssumption:
         """Fill a model's blanks from the project defaults."""
 
         raw = self.models.get(model_name or "", ModelAssumption())
-        return ModelAssumption(
+        return ResolvedAssumption(
             rows=self.default_rows if raw.rows is None else raw.rows,
             input_tokens=(
                 self.default_input_tokens if raw.input_tokens is None else raw.input_tokens
