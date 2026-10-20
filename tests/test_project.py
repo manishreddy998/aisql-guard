@@ -13,6 +13,12 @@ EXPECTED = {
     "models/staging/stg_tickets.sql": [],
     "models/staging/raw_summary_view.sql": ["ASG005"],
     "models/marts/capped_batch.sql": [],
+    "models/marts/demo_risky_summary.sql": [
+        "ASG001",
+        "ASG002",
+        "ASG006",
+        "ASG007",
+    ],
     "models/marts/incremental_safe.sql": [],
     "models/marts/uncapped_generate.sql": ["ASG001", "ASG002"],
     "models/marts/no_thinking.sql": ["ASG002"],
