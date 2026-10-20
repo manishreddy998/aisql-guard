@@ -1,0 +1,8 @@
+version: 2
+
+models:
+  - name: capped_batch
+    description: Ticket summaries with an output cap and a thinking budget.
+    columns:
+      - name: ticket_id
+      - name: summary
