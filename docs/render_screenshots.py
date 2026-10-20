@@ -1,4 +1,7 @@
-"""Rebuild the docs pictures from a real run of the example project.
+"""Rebuild the SARIF annotation picture from a real check of the example project.
+
+The terminal pictures under docs/screenshots are photographs of a local run.
+This script does not replace those.
 
 Run from the repository root:
 
@@ -8,18 +11,12 @@ Run from the repository root:
 from __future__ import annotations
 
 import json
-import re
 import subprocess
 import sys
 from pathlib import Path
 from xml.sax.saxutils import escape
 
 import cairosvg
-
-from aisql_guard.config import load_config
-from aisql_guard.engine import lint_paths
-from aisql_guard.estimate import estimate_paths
-from aisql_guard.reporters import Report, render_text_svg
 
 ROOT = Path(__file__).resolve().parents[1]
 PROJECT = ROOT / "examples" / "support_tickets"
@@ -49,22 +46,6 @@ def main() -> None:
     if completed.returncode != 1:
         raise SystemExit(f"expected the example project to be blocked, got {completed.returncode}")
 
-    config = load_config(PROJECT)
-    linted = lint_paths([PROJECT], dialect=config.dialect, disabled=set(config.disabled_rules))
-    estimate = estimate_paths([PROJECT], config)
-    report = Report(
-        findings=linted.findings,
-        estimate=estimate,
-        fail_on=config.fail_on,
-        config_path="examples/support_tickets/aisql-guard.toml",
-    )
-    terminal = tidy_terminal_svg(render_text_svg(report, width=120))
-    (DOCS / "check-terminal.svg").write_text(terminal, encoding="utf-8")
-    cairosvg.svg2png(
-        bytestring=terminal.encode("utf-8"),
-        write_to=str(DOCS / "check-terminal.png"),
-    )
-
     sarif = json.loads(sarif_path.read_text(encoding="utf-8"))
     annotation = annotation_svg(sarif)
     (DOCS / "sarif-annotation.svg").write_text(annotation, encoding="utf-8")
@@ -72,17 +53,6 @@ def main() -> None:
         bytestring=annotation.encode("utf-8"),
         write_to=str(DOCS / "sarif-annotation.png"),
     )
-
-
-def tidy_terminal_svg(svg: str) -> str:
-    """Drop the exporter credit and use a font installed on this machine."""
-
-    svg = re.sub(r"<!--.*?-->", "", svg, count=1, flags=re.S)
-    svg = svg.replace('class="rich-terminal"', 'class="terminal"')
-    svg = re.sub(r"@font-face \{.*?\}\s*", "", svg, flags=re.S)
-    svg = svg.replace("Fira Code, monospace", FONT)
-    svg = svg.replace("font-family: arial", f"font-family: {FONT}")
-    return svg
 
 
 def annotation_svg(sarif: dict[str, object]) -> str:
