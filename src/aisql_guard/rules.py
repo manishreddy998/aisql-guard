@@ -118,6 +118,16 @@ RULES: dict[str, Rule] = {
             "the text fields. Every extra column is billed as input."
         ),
     ),
+    "ASG100": Rule(
+        id="ASG100",
+        name="budget-exceeded",
+        severity="error",
+        summary="Estimated AI cost is over the configured budget.",
+        fix=(
+            "Lower the row count, cap output and thinking tokens, or raise "
+            "the budget in aisql-guard.toml."
+        ),
+    ),
 }
 
 
