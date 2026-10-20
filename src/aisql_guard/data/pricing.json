@@ -1,0 +1,227 @@
+{
+  "version": 1,
+  "retrieved": "2026-10-20",
+  "multipliers": {
+    "snowflake_ai_credit_usd": "2.00",
+    "snowflake_ai_credit_usd_regional": "2.20",
+    "databricks_usd_per_dbu": "0.07"
+  },
+  "sources": [
+    {
+      "id": "google-cloud-generative-ai",
+      "title": "Google Cloud generative AI pricing",
+      "url": "https://cloud.google.com/vertex-ai/generative-ai/pricing",
+      "retrieved": "2026-10-20",
+      "notes": "Global standard rates for a context at or under 200K tokens. The output row is text output (response and reasoning), so thinking tokens use the output rate. Audio input rates are not used. The 3.8 Flash row is the introductory rate through 2026-12-31. From 2027-01-01 the page lists input 1.50 and output 7.50. This file keeps the introductory rate and does not switch on its own. When a BigQuery call omits the endpoint, estimates use google-3.5-flash-lite, which matches the recent stable Flash-Lite default documented for that function."
+    },
+    {
+      "id": "snowflake-service-consumption",
+      "title": "Snowflake Service Consumption Table",
+      "url": "https://www.snowflake.com/legal-files/CreditConsumptionTable.pdf",
+      "retrieved": "2026-10-20",
+      "notes": "Effective October 15, 2026. Table 6(a) lists AI credits per million tokens. Table 2(b) lists the AI credit price: global on-demand 2.00 USD, regional on-demand 2.20 USD. Rates in this file are credits. USD is credits times the credit price. The default multiplier is the global on-demand price. Set snowflake_ai_credit_usd to 2.20 for the regional price."
+    },
+    {
+      "id": "databricks-foundation-model-serving",
+      "title": "Databricks foundation model serving pricing",
+      "url": "https://www.databricks.com/product/pricing/foundation-model-serving",
+      "retrieved": "2026-10-20",
+      "notes": "Pay-per-token rates are DBU per million tokens. The worked example on the page uses 0.07 USD per DBU for AWS US East (N. Virginia). USD is DBU times databricks_usd_per_dbu. The default multiplier is 0.07. DBU rates are stored as published, including 7.143 and 21.429, and are not rounded to a marketing dollar figure."
+    }
+  ],
+  "models": [
+    {
+      "id": "google-3.5-flash-lite",
+      "provider": "bigquery",
+      "unit": "usd",
+      "input_per_million": "0.30",
+      "output_per_million": "2.50",
+      "page_row": "3.5 Flash-Lite",
+      "source": "google-cloud-generative-ai",
+      "aliases": ["3.5-flash-lite", "3.5 flash-lite"]
+    },
+    {
+      "id": "google-3.5-flash",
+      "provider": "bigquery",
+      "unit": "usd",
+      "input_per_million": "1.50",
+      "output_per_million": "9.00",
+      "page_row": "3.5 Flash",
+      "source": "google-cloud-generative-ai",
+      "aliases": ["3.5-flash", "3.5 flash"]
+    },
+    {
+      "id": "google-3.8-flash",
+      "provider": "bigquery",
+      "unit": "usd",
+      "input_per_million": "0.75",
+      "output_per_million": "3.75",
+      "page_row": "3.8 Flash",
+      "source": "google-cloud-generative-ai",
+      "aliases": ["3.8-flash", "3.8 flash"],
+      "note": "Introductory rate through 2026-12-31. From 2027-01-01 the pricing page lists input 1.50 and output 7.50. This row does not change on its own."
+    },
+    {
+      "id": "google-3.1-flash-lite",
+      "provider": "bigquery",
+      "unit": "usd",
+      "input_per_million": "0.25",
+      "output_per_million": "1.50",
+      "page_row": "3.1 Flash-Lite",
+      "source": "google-cloud-generative-ai",
+      "aliases": ["3.1-flash-lite", "3.1 flash-lite"],
+      "note": "Text, image, and video input. Audio input on the same page is 0.50 and is not used here."
+    },
+    {
+      "id": "google-2.5-flash",
+      "provider": "bigquery",
+      "unit": "usd",
+      "input_per_million": "0.30",
+      "output_per_million": "2.50",
+      "page_row": "2.5 Flash",
+      "source": "google-cloud-generative-ai",
+      "aliases": ["2.5-flash", "2.5 flash"],
+      "note": "Text, image, and video input, and text output. Audio input on the same page is 1.00 and is not used here."
+    },
+    {
+      "id": "google-2.5-flash-lite",
+      "provider": "bigquery",
+      "unit": "usd",
+      "input_per_million": "0.10",
+      "output_per_million": "0.40",
+      "page_row": "2.5 Flash-Lite",
+      "source": "google-cloud-generative-ai",
+      "aliases": ["2.5-flash-lite", "2.5 flash-lite"]
+    },
+    {
+      "id": "llama3.1-8b",
+      "provider": "snowflake",
+      "unit": "credits",
+      "input_per_million": "0.132",
+      "output_per_million": "0.132",
+      "page_row": "llama3.1-8b",
+      "source": "snowflake-service-consumption",
+      "aliases": ["llama-3.1-8b"]
+    },
+    {
+      "id": "llama3.1-70b",
+      "provider": "snowflake",
+      "unit": "credits",
+      "input_per_million": "0.432",
+      "output_per_million": "0.432",
+      "page_row": "llama3.1-70b",
+      "source": "snowflake-service-consumption",
+      "aliases": ["llama-3.1-70b"]
+    },
+    {
+      "id": "llama3.3-70b",
+      "provider": "snowflake",
+      "unit": "credits",
+      "input_per_million": "0.432",
+      "output_per_million": "0.432",
+      "page_row": "llama3.3-70b",
+      "source": "snowflake-service-consumption",
+      "aliases": ["llama-3.3-70b"]
+    },
+    {
+      "id": "llama4-maverick",
+      "provider": "snowflake",
+      "unit": "credits",
+      "input_per_million": "0.144",
+      "output_per_million": "0.582",
+      "page_row": "llama4-maverick",
+      "source": "snowflake-service-consumption",
+      "aliases": []
+    },
+    {
+      "id": "mistral-large2",
+      "provider": "snowflake",
+      "unit": "credits",
+      "input_per_million": "1.20",
+      "output_per_million": "3.60",
+      "page_row": "mistral-large2",
+      "source": "snowflake-service-consumption",
+      "aliases": ["mistral-large-2"]
+    },
+    {
+      "id": "mistral-7b",
+      "provider": "snowflake",
+      "unit": "credits",
+      "input_per_million": "0.09",
+      "output_per_million": "0.12",
+      "page_row": "mistral-7b",
+      "source": "snowflake-service-consumption",
+      "aliases": []
+    },
+    {
+      "id": "mixtral-8x7b",
+      "provider": "snowflake",
+      "unit": "credits",
+      "input_per_million": "0.27",
+      "output_per_million": "0.42",
+      "page_row": "mixtral-8x7b",
+      "source": "snowflake-service-consumption",
+      "aliases": []
+    },
+    {
+      "id": "llama-4-maverick",
+      "provider": "databricks",
+      "unit": "dbu",
+      "input_per_million": "7.143",
+      "output_per_million": "21.429",
+      "page_row": "Llama 4 Maverick",
+      "source": "databricks-foundation-model-serving",
+      "aliases": ["llama 4 maverick"]
+    },
+    {
+      "id": "llama-3-3-70b",
+      "provider": "databricks",
+      "unit": "dbu",
+      "input_per_million": "7.143",
+      "output_per_million": "21.429",
+      "page_row": "Llama 3.3 70B",
+      "source": "databricks-foundation-model-serving",
+      "aliases": ["llama 3.3 70b"]
+    },
+    {
+      "id": "llama-3-1-8b",
+      "provider": "databricks",
+      "unit": "dbu",
+      "input_per_million": "2.143",
+      "output_per_million": "6.429",
+      "page_row": "Llama 3.1 8B",
+      "source": "databricks-foundation-model-serving",
+      "aliases": ["llama 3.1 8b"]
+    },
+    {
+      "id": "gemma-3-12b",
+      "provider": "databricks",
+      "unit": "dbu",
+      "input_per_million": "2.143",
+      "output_per_million": "7.143",
+      "page_row": "Gemma 3 12B",
+      "source": "databricks-foundation-model-serving",
+      "aliases": ["gemma 3 12b"]
+    },
+    {
+      "id": "qwen-3-80b",
+      "provider": "databricks",
+      "unit": "dbu",
+      "input_per_million": "2.143",
+      "output_per_million": "17.143",
+      "page_row": "Qwen 3 80B Instruct",
+      "source": "databricks-foundation-model-serving",
+      "aliases": ["qwen 3 80b", "qwen-3-80b-instruct"]
+    },
+    {
+      "id": "deepseek-v4-flash",
+      "provider": "databricks",
+      "unit": "dbu",
+      "input_per_million": "2.000",
+      "output_per_million": "4.000",
+      "page_row": "DeepSeek V4 Flash",
+      "source": "databricks-foundation-model-serving",
+      "aliases": ["deepseek v4 flash"]
+    }
+  ]
+}
