@@ -148,7 +148,7 @@ def _read_toml(path: Path) -> dict[str, Any]:
         raise ConfigError(f"could not parse {path}: {exc}") from exc
     if not isinstance(loaded, dict):
         raise ConfigError(f"{path} must be a table")
-    return cast(dict[str, Any], loaded)
+    return loaded
 
 
 def _from_mapping(data: dict[str, Any], *, path: Path | None) -> GuardConfig:
