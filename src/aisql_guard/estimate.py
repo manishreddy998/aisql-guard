@@ -379,12 +379,12 @@ def _assemble(calls: list[CallEstimate], config: GuardConfig) -> EstimateResult:
             blocked = True
             reasons.append(
                 f"{name} is estimated at {_usd(total)} USD, "
-                f"which is over its {_usd(budget)} USD budget"
+                f"which is over its {_usd(budget)} USD budget."
             )
         elif budget is not None and not priced:
             reasons.append(
                 f"{name} has a budget, but at least one call has no price, "
-                "so the budget was only checked against known dollars"
+                "so the budget was only checked against known dollars."
             )
         models.append(
             ModelEstimate(
@@ -403,8 +403,8 @@ def _assemble(calls: list[CallEstimate], config: GuardConfig) -> EstimateResult:
     if total_budget is not None and total is not None and total > total_budget:
         blocked = True
         reasons.append(
-            f"the project total is {_usd(total)} USD, "
-            f"which is over the {_usd(total_budget)} USD budget"
+            f"The project total is {_usd(total)} USD, "
+            f"which is over the {_usd(total_budget)} USD budget."
         )
     uncertain = any(not call.priced for call in calls)
     if uncertain:
