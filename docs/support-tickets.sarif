@@ -1,0 +1,487 @@
+{
+  "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "aisql-guard",
+          "version": "0.1.0",
+          "informationUri": "https://github.com/manishreddy998/aisql-guard",
+          "rules": [
+            {
+              "id": "ASG001",
+              "name": "missing-output-cap",
+              "shortDescription": {
+                "text": "AI call has no output token cap."
+              },
+              "fullDescription": {
+                "text": "AI call has no output token cap."
+              },
+              "help": {
+                "text": "Set max_output_tokens on a BigQuery call (STRUCT field or generation_config inside model_params). Set max_tokens on Databricks ai_query and Snowflake AI_COMPLETE."
+              },
+              "defaultConfiguration": {
+                "level": "error"
+              }
+            },
+            {
+              "id": "ASG002",
+              "name": "missing-thinking-budget",
+              "shortDescription": {
+                "text": "BigQuery AI call has no thinking budget."
+              },
+              "fullDescription": {
+                "text": "BigQuery AI call has no thinking budget."
+              },
+              "help": {
+                "text": "Set thinking_config.thinking_budget in model_params. Use 0 when the task does not need reasoning. On newer models, set thinking_config.thinking_level instead."
+              },
+              "defaultConfiguration": {
+                "level": "error"
+              }
+            },
+            {
+              "id": "ASG003",
+              "name": "limit-does-not-cut-work",
+              "shortDescription": {
+                "text": "LIMIT or OFFSET does not reduce the rows sent to the model."
+              },
+              "fullDescription": {
+                "text": "LIMIT or OFFSET does not reduce the rows sent to the model."
+              },
+              "help": {
+                "text": "Filter with WHERE, write those rows to a table, and read that table from the AI function. LIMIT inside the prompt query still processes the input first, and LIMIT on the outer SELECT runs after the function."
+              },
+              "defaultConfiguration": {
+                "level": "error"
+              }
+            },
+            {
+              "id": "ASG004",
+              "name": "incremental-reruns-generated-rows",
+              "shortDescription": {
+                "text": "Incremental model does not skip rows that were already generated."
+              },
+              "fullDescription": {
+                "text": "Incremental model does not skip rows that were already generated."
+              },
+              "help": {
+                "text": "Exclude keys already stored in {{ this }} before the AI call. NOT EXISTS, a left join that keeps only null matches, or a watermark against {{ this }} all work. unique_key alone still sends every source row to the model."
+              },
+              "defaultConfiguration": {
+                "level": "error"
+              }
+            },
+            {
+              "id": "ASG005",
+              "name": "ai-call-in-view",
+              "shortDescription": {
+                "text": "AI call is in a view or an ephemeral model."
+              },
+              "fullDescription": {
+                "text": "AI call is in a view or an ephemeral model."
+              },
+              "help": {
+                "text": "Materialize the AI call as a table or an incremental model, and let later models read the stored result. A view runs the call again on every read."
+              },
+              "defaultConfiguration": {
+                "level": "error"
+              }
+            },
+            {
+              "id": "ASG006",
+              "name": "unfiltered-table",
+              "shortDescription": {
+                "text": "AI call reads an unfiltered table."
+              },
+              "fullDescription": {
+                "text": "AI call reads an unfiltered table."
+              },
+              "help": {
+                "text": "Add a WHERE clause, or build a smaller upstream model, so only the rows that need a result are sent."
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              }
+            },
+            {
+              "id": "ASG007",
+              "name": "select-star-prompt",
+              "shortDescription": {
+                "text": "SELECT * is passed into the prompt."
+              },
+              "fullDescription": {
+                "text": "SELECT * is passed into the prompt."
+              },
+              "help": {
+                "text": "Pass only the columns the prompt needs, for example a CONCAT of the text fields. Every extra column is billed as input."
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              }
+            },
+            {
+              "id": "ASG100",
+              "name": "budget-exceeded",
+              "shortDescription": {
+                "text": "Estimated AI cost is over the configured budget."
+              },
+              "fullDescription": {
+                "text": "Estimated AI cost is over the configured budget."
+              },
+              "help": {
+                "text": "Lower the row count, cap output and thinking tokens, or raise the budget in aisql-guard.toml."
+              },
+              "defaultConfiguration": {
+                "level": "error"
+              }
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "ruleId": "ASG005",
+          "level": "error",
+          "message": {
+            "text": "AI.IF is in an ephemeral model. The call runs again on every read, so the bill repeats. Materialize the AI call as a table or an incremental model, and let later models read the stored result. A view runs the call again on every read."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "models/marts/billing_ephemeral.sql"
+                },
+                "region": {
+                  "startLine": 5,
+                  "startColumn": 3
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "ASG006",
+          "level": "warning",
+          "message": {
+            "text": "AI.SCORE reads an unfiltered table. Every row that reaches it becomes a model call. Add a WHERE clause, or build a smaller upstream model, so only the rows that need a result are sent."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "models/marts/full_table_score.sql"
+                },
+                "region": {
+                  "startLine": 5,
+                  "startColumn": 3
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "ASG004",
+          "level": "error",
+          "message": {
+            "text": "This incremental model calls AI.GENERATE but does not skip rows that already have a generated value. The next run sends those rows to the model again. Exclude keys already stored in {{ this }} before the AI call. NOT EXISTS, a left join that keeps only null matches, or a watermark against {{ this }} all work. unique_key alone still sends every source row to the model."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "models/marts/incremental_rerun.sql"
+                },
+                "region": {
+                  "startLine": 5,
+                  "startColumn": 3
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "ASG002",
+          "level": "error",
+          "message": {
+            "text": "AI.GENERATE does not set a thinking budget or thinking level. Thinking tokens are billed at the output token rate. Set thinking_config.thinking_budget in model_params. Use 0 when the task does not need reasoning. On newer models, set thinking_config.thinking_level instead."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "models/marts/no_thinking.sql"
+                },
+                "region": {
+                  "startLine": 5,
+                  "startColumn": 3
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "ASG003",
+          "level": "error",
+          "message": {
+            "text": "LIMIT or OFFSET sits outside AI.GENERATE. The function runs for the rows that reach the SELECT list, and the clause applies only after that. Filter with WHERE, write those rows to a table, and read that table from the AI function. LIMIT inside the prompt query still processes the input first, and LIMIT on the outer SELECT runs after the function."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "models/marts/outer_limit.sql"
+                },
+                "region": {
+                  "startLine": 11,
+                  "startColumn": 1
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "ASG003",
+          "level": "error",
+          "message": {
+            "text": "ML.GENERATE_TEXT reads a prompt query that uses LIMIT or OFFSET. BigQuery processes that input before it applies the clause, so the clause does not cut the model work. Filter with WHERE, write those rows to a table, and read that table from the AI function. LIMIT inside the prompt query still processes the input first, and LIMIT on the outer SELECT runs after the function."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "models/marts/prompt_limit.sql"
+                },
+                "region": {
+                  "startLine": 10,
+                  "startColumn": 5
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "ASG007",
+          "level": "warning",
+          "message": {
+            "text": "AI.GENERATE is fed SELECT *. Every column is packed into the prompt and billed as input. Pass only the columns the prompt needs, for example a CONCAT of the text fields. Every extra column is billed as input."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "models/marts/star_prompt.sql"
+                },
+                "region": {
+                  "startLine": 5,
+                  "startColumn": 3
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "ASG001",
+          "level": "error",
+          "message": {
+            "text": "AI.GENERATE does not set an output token cap. The response can run long, and you pay for every output token. Set max_output_tokens on a BigQuery call (STRUCT field or generation_config inside model_params). Set max_tokens on Databricks ai_query and Snowflake AI_COMPLETE."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "models/marts/ticket_summaries_risky.sql"
+                },
+                "region": {
+                  "startLine": 2,
+                  "startColumn": 3
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "ASG002",
+          "level": "error",
+          "message": {
+            "text": "AI.GENERATE does not set a thinking budget or thinking level. Thinking tokens are billed at the output token rate. Set thinking_config.thinking_budget in model_params. Use 0 when the task does not need reasoning. On newer models, set thinking_config.thinking_level instead."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "models/marts/ticket_summaries_risky.sql"
+                },
+                "region": {
+                  "startLine": 2,
+                  "startColumn": 3
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "ASG006",
+          "level": "warning",
+          "message": {
+            "text": "AI.GENERATE reads an unfiltered table. Every row that reaches it becomes a model call. Add a WHERE clause, or build a smaller upstream model, so only the rows that need a result are sent."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "models/marts/ticket_summaries_risky.sql"
+                },
+                "region": {
+                  "startLine": 2,
+                  "startColumn": 3
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "ASG007",
+          "level": "warning",
+          "message": {
+            "text": "AI.GENERATE is fed SELECT *. Every column is packed into the prompt and billed as input. Pass only the columns the prompt needs, for example a CONCAT of the text fields. Every extra column is billed as input."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "models/marts/ticket_summaries_risky.sql"
+                },
+                "region": {
+                  "startLine": 2,
+                  "startColumn": 3
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "ASG003",
+          "level": "error",
+          "message": {
+            "text": "LIMIT or OFFSET sits outside AI.GENERATE. The function runs for the rows that reach the SELECT list, and the clause applies only after that. Filter with WHERE, write those rows to a table, and read that table from the AI function. LIMIT inside the prompt query still processes the input first, and LIMIT on the outer SELECT runs after the function."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "models/marts/ticket_summaries_risky.sql"
+                },
+                "region": {
+                  "startLine": 6,
+                  "startColumn": 1
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "ASG001",
+          "level": "error",
+          "message": {
+            "text": "AI.GENERATE does not set an output token cap. The response can run long, and you pay for every output token. Set max_output_tokens on a BigQuery call (STRUCT field or generation_config inside model_params). Set max_tokens on Databricks ai_query and Snowflake AI_COMPLETE."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "models/marts/uncapped_generate.sql"
+                },
+                "region": {
+                  "startLine": 5,
+                  "startColumn": 3
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "ASG002",
+          "level": "error",
+          "message": {
+            "text": "AI.GENERATE does not set a thinking budget or thinking level. Thinking tokens are billed at the output token rate. Set thinking_config.thinking_budget in model_params. Use 0 when the task does not need reasoning. On newer models, set thinking_config.thinking_level instead."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "models/marts/uncapped_generate.sql"
+                },
+                "region": {
+                  "startLine": 5,
+                  "startColumn": 3
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "ASG005",
+          "level": "error",
+          "message": {
+            "text": "AI.GENERATE is in a view. The call runs again on every read, so the bill repeats. Materialize the AI call as a table or an incremental model, and let later models read the stored result. A view runs the call again on every read."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "models/staging/raw_summary_view.sql"
+                },
+                "region": {
+                  "startLine": 3,
+                  "startColumn": 3
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "ASG100",
+          "level": "error",
+          "message": {
+            "text": "ticket_summaries_risky is estimated at 1264.5 USD, which is over its 100 USD budget Lower the row count, cap output and thinking tokens, or raise the budget in aisql-guard.toml."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "examples/support_tickets/aisql-guard.toml"
+                },
+                "region": {
+                  "startLine": 1,
+                  "startColumn": 1
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "ASG100",
+          "level": "error",
+          "message": {
+            "text": "the project total is 1269.32 USD, which is over the 50 USD budget Lower the row count, cap output and thinking tokens, or raise the budget in aisql-guard.toml."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "examples/support_tickets/aisql-guard.toml"
+                },
+                "region": {
+                  "startLine": 1,
+                  "startColumn": 1
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

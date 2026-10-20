@@ -30,6 +30,7 @@ def test_scan_of_a_capped_model_passes(capsys: pytest.CaptureFixture[str]) -> No
     code = main(["scan", str(path), "--no-color"])
     captured = capsys.readouterr()
     assert code == 0
+    assert captured.out.count("aisql-guard 0.1.0") == 1
     assert "no findings" in captured.out
     assert "result: ok" in captured.out
 
