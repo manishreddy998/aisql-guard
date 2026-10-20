@@ -1,0 +1,8 @@
+- id: aisql-guard
+  name: aisql-guard
+  description: Catch surprise costs from AI functions in SQL before the query runs
+  entry: aisql-guard check
+  language: python
+  types_or: [sql]
+  args: ["--no-color"]
+  pass_filenames: true
