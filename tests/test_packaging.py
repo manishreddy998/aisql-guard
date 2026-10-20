@@ -42,6 +42,24 @@ def test_ci_runs_lint_types_and_tests_on_supported_pythons() -> None:
     assert "pypi" not in joined.lower()
 
 
+def test_code_scanning_workflow_runs_the_action_and_uploads_sarif() -> None:
+    path = ROOT / ".github" / "workflows" / "code-scanning.yml"
+    text = path.read_text(encoding="utf-8")
+    assert "pull_request:" in text
+    assert "uses: ./" in text
+    assert "security-events: write" in text
+    data = yaml.safe_load(text)
+    steps = data["jobs"]["aisql-guard"]["steps"]
+    action = next(step for step in steps if step.get("uses") == "./")
+    assert action["with"]["paths"] == "."
+    assert action["with"]["format"] == "sarif"
+    upload = next(
+        step for step in steps if step.get("uses") == "github/codeql-action/upload-sarif@v3"
+    )
+    assert upload["if"] == "always()"
+    assert upload["with"]["sarif_file"] == "aisql-guard.sarif"
+
+
 def test_clean_install_job_uses_a_fresh_pip_install() -> None:
     workflow = yaml.safe_load((ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8"))
     job = workflow["jobs"]["install"]
