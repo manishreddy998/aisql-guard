@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import io
 import json
 from dataclasses import dataclass
 from decimal import Decimal
@@ -137,7 +138,9 @@ def render_sarif(report: Report) -> str:
 
 
 def _console(*, color: bool, width: int) -> Console:
+    # Record into a buffer. The caller prints the exported text once.
     return Console(
+        file=io.StringIO(),
         record=True,
         width=width,
         force_terminal=color,
