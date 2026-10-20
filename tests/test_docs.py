@@ -21,14 +21,19 @@ def test_real_screenshots_are_pngs() -> None:
         assert len(png) > 1000
 
 
-def test_sarif_annotation_uses_the_check_output() -> None:
-    svg = (DOCS / "sarif-annotation.svg").read_text(encoding="utf-8")
-    assert "ASG001" in svg
-    assert "ASG100" in svg
-    assert "1264.5" in svg
-    assert "ticket_summaries_risky.sql" in svg
-    png = (DOCS / "sarif-annotation.png").read_bytes()
-    assert png.startswith(b"\x89PNG")
+def test_code_scanning_screenshots_are_pngs() -> None:
+    names = (
+        "screenshots/scan-asg001.png",
+        "screenshots/scan-asg002.png",
+        "screenshots/scan-asg006.png",
+        "screenshots/scan-asg007.png",
+    )
+    for name in names:
+        png = (DOCS / name).read_bytes()
+        assert png.startswith(b"\x89PNG")
+        assert len(png) > 1000
+    assert not (DOCS / "sarif-annotation.png").exists()
+    assert not (DOCS / "sarif-annotation.svg").exists()
 
     document = json.loads((DOCS / "support-tickets.sarif").read_text(encoding="utf-8"))
     assert document["version"] == "2.1.0"
@@ -42,7 +47,14 @@ def test_readme_has_the_diagram_and_the_pictures() -> None:
     assert "docs/screenshots/check-findings.png" in readme
     assert "docs/screenshots/check-estimate.png" in readme
     assert "docs/screenshots/tests-passing.png" in readme
-    assert "docs/sarif-annotation.png" in readme
+    assert "docs/screenshots/scan-asg001.png" in readme
+    assert "docs/screenshots/scan-asg002.png" in readme
+    assert "docs/screenshots/scan-asg006.png" in readme
+    assert "docs/screenshots/scan-asg007.png" in readme
+    assert "https://github.com/manishreddy998/aisql-guard/pull/10" in readme
+    assert "docs/support-tickets.sarif" in readme
+    assert "docs/sarif-annotation.png" not in readme
+    assert "docs/sarif-annotation.svg" not in readme
     assert "docs/check-terminal.png" not in readme
     assert "docs/check-terminal.svg" not in readme
     assert "ASG003" in readme
