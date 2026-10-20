@@ -71,5 +71,5 @@ warn_redundant_casts = true
 warn_unused_ignores = true
 
 [[tool.mypy.overrides]]
-module = ["sqlglot.*", "yaml"]
+module = ["sqlglot.*", "yaml", "tomli", "google.*"]
 ignore_missing_imports = true
