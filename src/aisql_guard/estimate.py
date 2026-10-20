@@ -12,8 +12,9 @@ from dataclasses import dataclass, field
 from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path
 
-from aisql_guard.config import GuardConfig, load_config
+from aisql_guard.config import GuardConfig, LiveSample, load_config
 from aisql_guard.engine import lint_paths
+from aisql_guard.live import LiveProbe, build_count_tokens_sql
 from aisql_guard.models import AiCall
 from aisql_guard.pricing import ModelPrice, PriceCatalog, load_pricing
 
@@ -40,6 +41,7 @@ class CallEstimate:
     thinking_usd: Decimal | None
     total_usd: Decimal | None
     priced: bool
+    dry_run_bytes: int | None = None
     notes: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, object]:
@@ -59,6 +61,7 @@ class CallEstimate:
             "thinking_usd": _money(self.thinking_usd),
             "total_usd": _money(self.total_usd),
             "priced": self.priced,
+            "dry_run_bytes": self.dry_run_bytes,
             "notes": list(self.notes),
         }
 
@@ -108,8 +111,18 @@ class EstimateResult:
         }
 
 
-def estimate_paths(paths: list[Path], config: GuardConfig | None = None) -> EstimateResult:
-    """Lint the paths and price every AI call they contain."""
+def estimate_paths(
+    paths: list[Path],
+    config: GuardConfig | None = None,
+    *,
+    live: bool = False,
+    probe: LiveProbe | None = None,
+) -> EstimateResult:
+    """Lint the paths and price every AI call they contain.
+
+    ``live=True`` is the only switch that may open a BigQuery client. A
+    config file on its own never does.
+    """
 
     if config is None:
         start = paths[0] if paths else Path.cwd()
@@ -119,28 +132,113 @@ def estimate_paths(paths: list[Path], config: GuardConfig | None = None) -> Esti
         dialect=config.dialect,
         disabled=set(config.disabled_rules),
     )
-    return estimate_calls(linted.calls, config)
+    return estimate_calls(linted.calls, config, live=live, probe=probe)
 
 
 def estimate_calls(
     calls: list[AiCall],
     config: GuardConfig,
     catalog: PriceCatalog | None = None,
+    *,
+    live: bool = False,
+    probe: LiveProbe | None = None,
 ) -> EstimateResult:
     """Price calls that have already been found."""
 
     prices = catalog or load_pricing()
-    priced_calls = [_price_call(call, config, prices) for call in calls]
+    readings: dict[str, _LiveReading] = {}
+    if live:
+        readings = _collect_samples(calls, config, _probe_for(config, probe))
+    priced_calls = [
+        _price_call(call, config, prices, readings.get(call.model_name or call.path))
+        for call in calls
+    ]
     return _assemble(priced_calls, config)
 
 
-def _price_call(call: AiCall, config: GuardConfig, catalog: PriceCatalog) -> CallEstimate:
+@dataclass
+class _LiveReading:
+    input_tokens: int | None
+    dry_run_bytes: int | None
+    notes: list[str]
+
+
+def _probe_for(config: GuardConfig, probe: LiveProbe | None) -> LiveProbe:
+    if probe is not None:
+        return probe
+    from aisql_guard.live import connect_bigquery
+
+    return connect_bigquery(config.live_project, config.live_location)
+
+
+def _collect_samples(
+    calls: list[AiCall],
+    config: GuardConfig,
+    probe: LiveProbe,
+) -> dict[str, _LiveReading]:
+    readings: dict[str, _LiveReading] = {}
+    for call in calls:
+        key = call.model_name or call.path
+        if key in readings:
+            continue
+        readings[key] = _read_sample(config.live_models.get(key), config, probe)
+    return readings
+
+
+def _read_sample(
+    sample: LiveSample | None,
+    config: GuardConfig,
+    probe: LiveProbe,
+) -> _LiveReading:
+    notes: list[str] = []
+    input_tokens: int | None = None
+    dry_bytes: int | None = None
+    if sample is None or not _sample_has_tokens(sample):
+        notes.append(
+            "live mode left input tokens as an assumption because no sample SQL is configured"
+        )
+    else:
+        sql = build_count_tokens_sql(sample, config.live_sample_rows)
+        average = probe.average_input_tokens(sql)
+        input_tokens = int(Decimal(str(average)).quantize(Decimal(1), rounding=ROUND_HALF_UP))
+        if sample.count_tokens_sql:
+            notes.append("input tokens use the average from the configured AI.COUNT_TOKENS query")
+        else:
+            notes.append(
+                "input tokens use the average from AI.COUNT_TOKENS "
+                f"on a sample of {config.live_sample_rows} rows"
+            )
+    if sample is not None and sample.dry_run_sql:
+        dry_bytes = probe.dry_run_bytes(sample.dry_run_sql)
+        notes.append(
+            f"dry run reports {dry_bytes} bytes. Query compute is billed separately "
+            "and is not part of this estimate."
+        )
+    return _LiveReading(input_tokens=input_tokens, dry_run_bytes=dry_bytes, notes=notes)
+
+
+def _sample_has_tokens(sample: LiveSample) -> bool:
+    return bool(sample.count_tokens_sql or (sample.prompt and sample.source))
+
+
+def _price_call(
+    call: AiCall,
+    config: GuardConfig,
+    catalog: PriceCatalog,
+    reading: _LiveReading | None = None,
+) -> CallEstimate:
     assumption = config.assumption_for(call.model_name)
     rows = assumption.rows
     input_tokens = assumption.input_tokens
     output_tokens = assumption.output_tokens
     thinking_tokens = assumption.thinking_tokens
     notes: list[str] = []
+    dry_bytes: int | None = None
+    if reading is not None:
+        notes.extend(reading.notes)
+        dry_bytes = reading.dry_run_bytes
+        if reading.input_tokens is not None:
+            input_tokens = reading.input_tokens
 
     if call.output_token_cap is not None:
         if call.output_token_cap < output_tokens:
@@ -178,7 +276,9 @@ def _price_call(call: AiCall, config: GuardConfig, catalog: PriceCatalog) -> Cal
             f"no published price matched {hint}. "
             "Unpriced calls are not counted as 0 USD."
         )
-        return _unpriced(call, rows, input_tokens, output_tokens, thinking_tokens, notes)
+        return _unpriced(
+            call, rows, input_tokens, output_tokens, thinking_tokens, notes, dry_bytes
+        )
 
     input_rate, output_rate = price.usd_rates(
         snowflake_credit_usd=config.snowflake_ai_credit_usd,
@@ -203,6 +303,7 @@ def _price_call(call: AiCall, config: GuardConfig, catalog: PriceCatalog) -> Cal
         thinking_usd=thinking_usd,
         total_usd=input_usd + output_usd + thinking_usd,
         priced=True,
+        dry_run_bytes=dry_bytes,
         notes=notes,
     )
 
@@ -236,6 +337,7 @@ def _unpriced(
     output_tokens: int,
     thinking_tokens: int,
     notes: list[str],
+    dry_bytes: int | None,
 ) -> CallEstimate:
     return CallEstimate(
         path=call.path,
@@ -253,6 +355,7 @@ def _unpriced(
         thinking_usd=None,
         total_usd=None,
         priced=False,
+        dry_run_bytes=dry_bytes,
         notes=notes,
     )
 
