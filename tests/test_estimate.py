@@ -132,11 +132,14 @@ def test_model_and_total_budgets_block() -> None:
     assert per_model.blocked
     assert per_model.models[0].over_budget
     assert "0.55 USD" in per_model.reasons[0]
+    assert per_model.reasons[0].endswith(".")
 
     total = estimate_calls([call, _call(line=2)], _config(total_budget_usd=Decimal("1")))
     assert total.total_usd == Decimal("1.10")
     assert total.blocked
-    assert any("project total" in reason for reason in total.reasons)
+    project = next(reason for reason in total.reasons if "project total" in reason)
+    assert project.startswith("The project total is ")
+    assert project.endswith(".")
 
 
 def test_databricks_dbu_rate_is_not_rounded() -> None:

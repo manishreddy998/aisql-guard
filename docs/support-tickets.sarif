@@ -445,7 +445,7 @@
           "ruleId": "ASG100",
           "level": "error",
           "message": {
-            "text": "ticket_summaries_risky is estimated at 1264.5 USD, which is over its 100 USD budget Lower the row count, cap output and thinking tokens, or raise the budget in aisql-guard.toml."
+            "text": "ticket_summaries_risky is estimated at 1264.5 USD, which is over its 100 USD budget. Lower the row count, cap output and thinking tokens, or raise the budget in aisql-guard.toml."
           },
           "locations": [
             {
@@ -465,7 +465,7 @@
           "ruleId": "ASG100",
           "level": "error",
           "message": {
-            "text": "the project total is 1269.32 USD, which is over the 50 USD budget Lower the row count, cap output and thinking tokens, or raise the budget in aisql-guard.toml."
+            "text": "The project total is 1269.32 USD, which is over the 50 USD budget. Lower the row count, cap output and thinking tokens, or raise the budget in aisql-guard.toml."
           },
           "locations": [
             {

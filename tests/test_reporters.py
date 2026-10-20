@@ -70,6 +70,10 @@ def test_sarif_points_at_the_source_line() -> None:
     assert budget[0]["locations"][0]["physicalLocation"]["artifactLocation"]["uri"] == (
         "aisql-guard.toml"
     )
+    for item in budget:
+        text = item["message"]["text"]
+        assert ". Lower the row count" in text
+        assert text.endswith(".")
     rule_ids = {rule["id"] for rule in run["tool"]["driver"]["rules"]}
     assert "ASG001" in rule_ids
     assert "ASG100" in rule_ids
